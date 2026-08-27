@@ -3,3 +3,6 @@ lib/
 
 # Environment Variables
 .env
+
+# Compiled Artifacts
+cache/
