@@ -6,3 +6,6 @@ lib/
 
 # Compiled Artifacts
 cache/
+
+# Broadcast files
+broadcast/
