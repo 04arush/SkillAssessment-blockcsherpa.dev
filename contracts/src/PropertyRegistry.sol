@@ -103,7 +103,7 @@ contract PropertyRegistry {
      * @dev Equivalent to the total number of properties registered so far.
      * @return The current value of `nextPropertyId`.
      */
-    function getNextPropertyId() external view returns (uint256) {
+    function getNextPropertyCount() external view returns (uint256) {
         return nextPropertyId;
     }
 }

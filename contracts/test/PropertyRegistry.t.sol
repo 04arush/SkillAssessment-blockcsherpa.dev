@@ -56,7 +56,7 @@ contract PropertyRegistryTest is Test {
 
         assertEq(id0, 0);
         assertEq(id1, 1);
-        assertEq(registry.getNextPropertyId(), 2);
+        assertEq(registry.getNextPropertyCount(), 2);
     }
 
 
