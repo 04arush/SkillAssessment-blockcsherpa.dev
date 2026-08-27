@@ -1,485 +1,199 @@
-# REChain - AI-Powered Full-Stack Real Estate Platform
+# Block Sherpa — Smart Contract Developer Assessment
 
-*A production-ready real estate platform with AI-powered property search, admin dashboard, and automated scraping — designed as a technical assessment for engineering candidates*
+**Candidate:** Arush  
+**Role:** Smart Contract Developer (Pet360 project)
 
-## 🎯 What This Project Is
+---
 
-This is a **full-stack real estate platform** built for evaluating engineering candidates. It demonstrates real-world architecture, AI integration, and modern development practices.
+## Overview
 
+I was given the [REChain](https://github.com/0xjoseOlivencia/Skill-Assessment) repository — a pre-built full-stack real estate platform. My task was to write a `PropertyRegistry` Solidity contract, deploy it to Polygon Amoy testnet, and wire a "Register on Blockchain" feature into the existing frontend.
 
-**Core Features:**
-- 🔍 AI-powered property search (Firecrawl + GPT-4.1)
-- 🏢 Admin dashboard (CRUD operations)
-- 📅 Appointment scheduling
-- 📊 Real-time analytics
-- 🔐 JWT authentication
-- 🖼️ Image upload (ImageKit)
-- 📧 Email notifications (Brevo)
+Everything in `contracts/` is written by me from scratch. In `frontend/`, I added two new files and modified one existing page. The backend was not touched except for the `.env` where I added a dummy MongoDB URI to get the project running locally.
 
+The `.env` in `backend/` was already pushed to the repo so I did not remove it. The URI I added is just a dummy account of mine.
 
+## Time Taken
 
-## Architecture
+The assessment window was 3–4 hours. My first commit (repo clone) was at ~15:10 IST and my last commit (excluding README) at ~19:08 IST — but being true, I think I went a little over 4 hours. The extra time was spent getting the existing backend running locally, which required configuring MongoDB, something I hadn't worked with before. The contract, tests, deployment, and frontend integration were all done within the intended window. Commit history is in the repo for reference.
 
-**Multi-source AI Property Search Pipeline:**
+---
 
-```mermaid
-graph TD
-    A["React Frontend<br/>(TypeScript + Vite)"] -->|POST /api/ai/search| B["Express Backend<br/>(Node.js + Helmet + CORS)"]
-    
-    B -->|Build 3 parallel queries| C["Firecrawl API"]
-    
-    C -->|Query 1:<br/>site:zapimoveis.com| D1["zapimoveis"]  
-    C -->|Query 2:<br/>site:vivareal.com.com| D2["vivareal"]
-    C -->|Query 3:<br/>site:imovelweb.com.| D3["imovelweb"]
-    
-    D1 -->|8-10 URLs| E["Parallel<br/>Scraping"]
-    D2 -->|8-10 URLs| E
-    D3 -->|8-10 URLs| E
-    
-    E -->|Full browser render<br/>per property| F["Firecrawl<br/>scrapeUrl"] 
-    F -->|Structured JSON| G["Backend<br/>Processing"]
-    
-    G -->|Deduplicate<br/>by address| H["Code-side Filter<br/>Reject rentals/PG"]
-    H -->|Clean properties| I["GitHub Models<br/>GPT-4.1"]
-    
-    I -->|Ranked + Insights| J["Response<br/>to Frontend"]
-    
-    J -->|Display with<br/>source badges| K["Rich Property<br/>Cards"]
-    
-    B --> L[("MongoDB<br/>Atlas")]
-    C --> M["User API Keys<br/>(localStorage)"]
-    F --> N["ImageKit CDN<br/>(Images)"]
-    
-    style B fill:#4A90E2
-    style E fill:#FF6B6B
-    style I fill:#7C3AED
-    style K fill:#10B981
-```
-
-**Complete System Architecture:**
-
-```mermaid
-flowchart LR
-    subgraph Client["CLIENT LAYER"]
-        FE["Frontend<br/>React 18 + TS<br/>Vercel"]
-      AD["Admin Panel<br/>React + JS<br/>Vercel"]
-    end
-    
-    subgraph API["API LAYER (Render)"]
-        BE["Express.js<br/>Helmet + CORS<br/>Rate Limiter"]
-    end
-    
-    subgraph Data["DATA & SERVICES"]
-        DB[("MongoDB Atlas<br/>Database")]
-        IK["ImageKit CDN<br/>Images"]
-        FC["Firecrawl API<br/>Web Scraping<br/>Multi-source"]
-        AI["GitHub Models<br/>GPT-4.1<br/>AI Ranking"]
-        EMAIL["Brevo SMTP<br/>Email Service"]
-    end
-    
-    FE -->|Axios| BE
-    AD -->|Axios| BE
-    BE -->|JWT Auth| DB
-    BE -->|Upload| IK
-    BE -->|Scrape| FC
-    BE -->|Rank Props| AI
-    BE -->|Send Mail| EMAIL
-    
-    style Client fill:#E8F4F8
-    style API fill:#F0E8FF
-    style Data fill:#FFF4E8
-```
-
-<br/>
-
-### 🔑 User-Owned API Keys
-
-Users provide their **own free keys** in the browser. Keys are stored in localStorage only — never on the server.
+## Structure
 
 ```
-User's browser (localStorage)
-  REChain_github_key   = "ghp_xxx"
-  REChain_firecrawl_key = "fc-xxx"
-         │
-         │  X-Github-Key / X-Firecrawl-Key headers
-         ▼
-  Backend creates per-request service instances
-  (Server env keys are NEVER used as fallback)
+Skill-Assessment/
+├── contracts/                              ← created from scratch
+│   ├── src/PropertyRegistry.sol
+│   ├── test/PropertyRegistry.t.sol
+│   ├── script/Deploy.s.sol
+│   └── foundry.toml
+└── frontend/
+    └── src/
+        ├── config/propertyRegistry.ts      ← new
+        ├── hooks/usePropertyRegistry.ts    ← new
+        └── pages/PropertyDetailsPage.tsx   ← modified
 ```
 
-**Get your free keys in ~2 minutes:**
+---
 
-| Service | Link | Free Tier |
-|---|---|---|
-| GitHub Models (GPT-4.1) | [github.com/marketplace/models](https://github.com/marketplace/models) | Free with any GitHub account |
-| Firecrawl (web scraping) | [firecrawl.dev](https://firecrawl.dev) | 500 free credits/month |
-<br/>
+## What I Built
 
-### 📊 Admin Dashboard
+### 1. Smart Contract — `contracts/src/PropertyRegistry.sol`
 
-> Full control — manage listings, track appointments, monitor analytics, and upload images with drag-and-drop.
+Written in Solidity `0.8.19` using Foundry. The contract registers real-world properties on-chain and tracks ownership.
 
-<div align="center">
+```solidity
+struct Property {
+    string  propertyAddress;
+    address owner;
+    uint256 price;
+    bool    exists;
+}
+```
 
-| Capability | Description |
-| :--------: | :--- |
-| ➕ | Add / Edit / Delete property listings with multi-image upload |
-| 📅 | Appointment management with status updates & meeting link generation |
-| 📈 | Real-time analytics dashboard with Chart.js visualizations |
-| 👥 | User management and platform activity monitoring |
+**Functions:**
 
-</div>
+| Function | Description |
+|---|---|
+| `registerProperty(string, uint256)` | Registers a new property owned by `msg.sender`, returns the assigned ID |
+| `transferOwnership(uint256, address)` | Transfers ownership — reverts if caller isn't the owner, property doesn't exist, or new owner is zero address |
+| `getProperty(uint256)` | Returns the full property struct — reverts if ID not registered |
+| `getNextPropertyCount()` | Returns total properties registered so far |
 
-<br/>
+**Events:**
+```solidity
+event PropertyRegistered(uint256 indexed propertyId, address indexed owner, string propertyAddress, uint256 price);
+event OwnershipTransferred(uint256 indexed propertyId, address indexed previousOwner, address indexed newOwner);
+```
+
+**Custom errors:**
+```solidity
+error PropertyDoesNotExist(uint256 propertyId);
+error NotPropertyOwner(uint256 propertyId, address caller);
+error InvalidAddress();
+```
+
+**Key design decisions:**
+- `bool exists` in the struct — without it, ID 0 silently returns empty data for unregistered properties, making it impossible to distinguish a missing property from a zero-value one
+- `external` over `public` — none of these functions are called internally, so `external` is cheaper
+- `Property storage prop` — caches the storage pointer rather than re-reading from storage on every access
+- Custom errors with parameters over `require` strings — more gas-efficient and gives callers useful context (e.g. which ID failed, which address was rejected)
+- `indexed` on event parameters — makes logs filterable off-chain by `propertyId`, `owner`, and `newOwner`
+
+---
+
+### 2. Tests — `contracts/test/PropertyRegistry.t.sol`
+
+- Written with Foundry's `forge-std` test library.
+- 11 tests, all passing.
+- 100% coverage on the contract.
+- AI was used to get the context for what-all to test to achieve this coverage (more down at `## AI Usage`)
+
+```bash
+forge test -vvv
+```
+
+| Test | What it covers |
+|---|---|
+| `test_RegisterProperty_StoresCorrectData` | Happy path — all fields stored correctly |
+| `test_RegisterProperty_EmitsEvent` | `PropertyRegistered` fires with correct args |
+| `test_RegisterProperty_IncrementsId` | IDs auto-increment, count is tracked |
+| `test_TransferOwnership_UpdatedOwner` | Owner field updated after transfer |
+| `test_TransferOwnership_EmitsEvent` | `OwnershipTransferred` fires with correct args |
+| `test_RevertWhen_NonOwnerTransfers` | Non-owner rejected with `NotPropertyOwner` |
+| `test_RevertWhen_TransferToZeroAddress` | Zero address rejected with `InvalidAddress` |
+| `test_RevertWhen_GetNonExistentProperty` | Reading missing ID reverts with `PropertyDoesNotExist` |
+| `test_RevertWhen_TransferNonExistentProperty` | Transferring missing ID reverts with `PropertyDoesNotExist` |
+| `testFuzz_RegisterProperty_PriceAlwaysMatches` | Fuzz (256 runs) — stored price always equals input |
+| `testFuzz_OnlyOwnerCanTransfer` | Fuzz (256 runs) — access control holds for any random attacker |
+
+---
+
+### 3. Deployment — Polygon Amoy Testnet
+
+I wrote a Foundry deploy script at `contracts/script/Deploy.s.sol` and deployed to Polygon Amoy.
+
+**Contract address:** [`0xe3B492286030B7230d121A03a68F7cA80744E892`](https://amoy.polygonscan.com/address/0xe3B492286030B7230d121A03a68F7cA80744E892)  
+**Deploy tx:** [`0x2df6d62387746100e97b0b5ed6236857edc5d23ae1fa3f6c2d3626265aefe37b`](https://amoy.polygonscan.com/tx/0x2df6d62387746100e97b0b5ed6236857edc5d23ae1fa3f6c2d3626265aefe37b)  
+**Network:** Polygon Amoy (chain ID `80002`)
+
+```bash
+# from contracts/
+source .env
+forge script script/Deploy.s.sol --rpc-url $AMOY_RPC_URL --private-key $PRIVATE_KEY --broadcast
+```
+
+---
+
+### 4. Frontend Integration
+
+No backend changes. I added two files and modified one existing page in `frontend/src/`.
+
+**`frontend/src/config/propertyRegistry.ts`** *(new)*  
+Holds the deployed contract address, human-readable ABI, and the Amoy chain ID constant. Single source of truth — nothing is hardcoded elsewhere.
+
+**`frontend/src/hooks/usePropertyRegistry.ts`** *(new)*  
+A custom React hook that encapsulates the entire wallet → network → contract flow. It exposes `{ status, txHash, error, registerOnChain }`.
+
+The status machine progresses: `idle → connecting → pending → confirmed | error`
+
+- Detects missing MetaMask and surfaces a clear error
+- Automatically prompts a network switch to Polygon Amoy if the user is on the wrong chain (`wallet_switchEthereumChain`)
+- Calls `registerProperty` on the deployed contract with the property's location and price
+- Captures the tx hash immediately on submission (before confirmation) so the UI can show it
+
+**`frontend/src/pages/PropertyDetailsPage.tsx`** *(modified)*  
+Added a "Blockchain Status" card to the right sidebar alongside the existing schedule-viewing card. It renders differently based on the hook's status:
+
+- **idle** — "Not registered on blockchain" + Register button
+- **connecting** — "Connecting wallet..."
+- **pending** — "Transaction pending..."
+- **confirmed** — tx hash as a clickable Amoy Polygonscan link
+- **error** — error message in red
+
+The button passes `property.location` and `parseEther(property.price.toString())` directly into `registerOnChain`, using the property's existing off-chain data as the on-chain inputs.
+
+---
+
+## Running Locally
+
+**Contract:**
+```bash
+cd contracts
+forge build
+forge test -vvv
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+# http://localhost:5173 — navigate to any property detail page
+```
+
+MetaMask must be installed and connected to Polygon Amoy (chain ID `80002`) to use the blockchain registration feature.
+
+---
+
+## AI Usage
+
+Block Sherpa's assessment explicitly encourages AI-assisted development, so I want to be transparent about where and how I used it. It was a very minimal project, AI was not much needed but I saved some time.
+
+- **Claude Sonnet 4.5** — Used for the frontend integration. Tailwind CSS and React are my weaker areas, so I used it to help with the JSX structure and Tailwind classes in `PropertyDetailsPage.tsx`. TypeScript and ethers.js I know just enough to work with independently. 
+    - I also asked it what I should be testing to get 100% coverage on the contract — not to write the tests, but to make sure I wasn't missing any edge cases or vulnerable paths before I wrote them myself (AI can write tests for a minimal project like this easily but I had enough time — not expecting later issues).
+- **Gemini 3.1 Pro** — Used to help debug the MongoDB connection issue when getting the existing backend running locally. I hadn't worked with MongoDB before and needed to get it running just to have a working frontend to integrate into.
+
+---
 
 ## Tech Stack
 
-<div align="center">
-
-### Frontend
-React,  TypeScript,  Vite,  Tailwind,  Framer Motion,  React Router
-<br/>
-### Backend
-Node.js,  Express,  MongoDB,  JWT,  Nodemailer
-<br/>
-### AI & Infrastructure
-GPT-4.1,  Firecrawl,  ImageKit,  Vercel,  Render
-</div>
-
-<br/>
-
-
-## Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) 18+ and npm 8+
-- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) free account (or local MongoDB)
-- [ImageKit](https://imagekit.io/) free account (10GB free tier)
-- [Brevo](https://www.brevo.com/) free SMTP account (for email notifications)
-
-### 1. Clone the Repository
-
-```bash
-Clone the Repo
-
-# Install dependencies per app:
-cd backend && npm install
-cd ../frontend && npm install
-cd ../admin && npm install
-```
-
-<details>
-<summary><strong> 2. Backend Setup</strong></summary>
-
-<br/>
-
-```bash
-cd backend
-npm install
-cp .env.example .env.local
-```
-
-Edit `backend/.env.local` with your actual values:
-
-```env
-# Essential Configuration (Required)
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/REChain?retryWrites=true&w=majority
-JWT_SECRET=your_super_secure_jwt_secret_here  # Generate with: openssl rand -base64 32
-ADMIN_EMAIL=admin@REChain.com
-ADMIN_PASSWORD=your_secure_admin_password
-
-# Email Service (Brevo SMTP - Free tier available)
-SMTP_USER=your_brevo_smtp_login
-SMTP_PASS=your_brevo_smtp_password
-EMAIL=your_sender_email@domain.com
-BREVO_API_KEY=your_brevo_api_key
-
-# Frontend URL (for CORS + password reset emails)
-WEBSITE_URL=http://localhost:5173
-FRONTEND_URL=http://localhost:5173
-ADMIN_URL=http://localhost:5174
-LOCAL_URLS=http://localhost:5173,http://localhost:5174,http://localhost:4000
-
-# Optional: Image Storage (ImageKit - Free 10GB tier)
-IMAGEKIT_PUBLIC_KEY=public_your_imagekit_public_key
-IMAGEKIT_PRIVATE_KEY=private_your_imagekit_private_key
-IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_imagekit_id
-
-# Optional: AI Services (for AI Property Hub)
-# Users can provide their own keys via frontend, these are server fallbacks
-# FIRECRAWL_API_KEY=fc-your_firecrawl_api_key
-# GITHUB_MODELS_API_KEY=github_pat_your_github_token
-```
-
-```bash
-npm run dev   # Starts backend on http://localhost:4000
-```
-
-** Get Free API Keys (Optional - for AI features):**
-- **MongoDB Atlas**: [cloud.mongodb.com](https://cloud.mongodb.com) - Free 512MB tier
-- **ImageKit**: [imagekit.io](https://imagekit.io) - Free 10GB + CDN
-- **Brevo SMTP**: [brevo.com](https://brevo.com) - Free 300 emails/day
-- **Firecrawl**: [firecrawl.dev](https://firecrawl.dev) - Free 500 pages/month
-- **GitHub Models**: [github.com/marketplace/models](https://github.com/marketplace/models) - Free with GitHub account
-
-</details>
-
-<details>
-<summary><strong> 3. Frontend Setup</strong></summary>
-
-<br/>
-
-```bash
-cd ../frontend
-npm install
-cp .env.example .env.local
-```
-
-Edit `frontend/.env.local`:
-
-```env
-# Backend API URL
-VITE_API_BASE_URL=http://localhost:4000
-
-# Feature flags
-VITE_ENABLE_AI_HUB=true
-```
-
-```bash
-npm run dev   # Starts frontend on http://localhost:5173
-```
-
-</details>
-
-<details>
-<summary><strong> 4. Admin Panel Setup</strong></summary>
-
-<br/>
-
-```bash
-cd ../admin
-npm install
-cp .env.example .env.local
-```
-
-Edit `admin/.env.local`:
-
-```env
-# Backend API URL (must match your backend)
-VITE_BACKEND_URL=http://localhost:4000
-```
-
-```bash
-npm run dev   # Starts admin panel on http://localhost:5174
-```
-
-** Access Admin Panel:**
-- URL: http://localhost:5174
-- Login with credentials from `backend/.env`: `ADMIN_EMAIL` & `ADMIN_PASSWORD`
-
-</details>
-
-<br/>
-
-
-## API Endpoints
-
-<details>
-<summary><strong> Authentication & Users</strong></summary>
-
-<br/>
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /api/users/register | Register new user |
-| POST | /api/users/login | Login (returns JWT) |
-| POST | /api/users/admin | Admin login |
-| GET | /api/users/me | Get current user (JWT required) |
-| POST | /api/users/forgot | Send password reset email |
-| POST | /api/users/reset/:token | Reset password |
-
-</details>
-
-<details>
-<summary><strong> Products</strong></summary>
-
-<br/>
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | /api/products/list | List all properties |
-| GET | /api/products/single/:id | Get property by ID |
-| POST | /api/products/add | Add property with images (admin) |
-| POST | /api/products/update | Update property (admin) |
-| POST | /api/products/remove | Delete property (admin) |
-
-</details>
-<details>
-<summary><strong> Properties</strong></summary>
-
-<br/>
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | api/locations/:city/trends | Location trends — same rate limit (shares the 10/hr budget) |
-| POST | /api/properties/search | Original route (backend format) — also rate-limited |
-| POST | /api/ai/search | Alias route for frontend — transforms format, then rate-limits, then searches |
-| POST | /api/ai/validate-keys | Validate user-provided API keys before save/use |
-| GET | /api/user/properties | User listing routes (auth required) |
-| POST | /api/user/properties | User listing routes (auth required) |
-| PUT | /api/user/properties/:id | User listing routes (auth required) |
-| DELET | /api/user/properties/:id | User listing routes (auth required) |
-| GET | /api/rate-limit/stats | Rate limiter stats (for monitoring)  |
-| GET | /api/cache/stats | Cache stats (for monitoring MongoDB cache) |
-
-</details>
-
-<details>
-<summary><strong> Appointments</strong></summary>
-
-<br/>
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /api/appointments/schedule | Book viewing (guest) |
-| POST | /api/appointments/schedule/auth | Book viewing (logged in) |
-| GET | /api/appointments/user | Get appointments by email |
-| PUT | /api/appointments/cancel/:id | Cancel appointment |
-| GET | /api/appointments/all | All appointments (admin) |
-| PUT | /api/appointments/status | Update status (admin) |
-| PUT | /api/appointments/update-meeting | Add meeting link (admin) |
-
-</details>
-
-<details>
-<summary><strong> AI & Other Services</strong></summary>
-
-<br/>
-
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /api/ai/search | AI property search (requires user API keys) |
-| GET | /api/locations/:city/trends | Location market trends (requires user API keys) |
-| POST | /api/forms/submit | Contact form submission |
-| GET | /api/admin/stats | Dashboard statistics (admin) |
-
-</details>
-
-<br/>
-
-<details>
-<summary><strong> Pre-Deployment Checklist</strong></summary>
-
-<br/>
-
-**Required Services (Free tier available):**
-- [ ] **MongoDB Atlas** cluster created → Connection string ready
-- [ ] **ImageKit** account → API keys ready (for image uploads)
-- [ ] **Brevo SMTP** account → SMTP credentials ready (for emails)
-
-**Environment Setup:**
-- [ ] All `.env` files configured with production values
-- [ ] `JWT_SECRET` set to secure random string (32+ characters)
-- [ ] `ADMIN_EMAIL` and `ADMIN_PASSWORD` set to your admin credentials
-- [ ] Frontend `VITE_API_BASE_URL` points to deployed backend
-- [ ] Backend `WEBSITE_URL` points to deployed frontend
-
-**Optional (for AI features):**
-- [ ] **Firecrawl** API key (500 free pages/month)
-- [ ] **GitHub Models** token (free with GitHub account)
-
-</details>
-
-** Alternative Deployment Options:**
-- **Backend**: Heroku, Railway, DigitalOcean App Platform, AWS/Google Cloud
-- **Frontend**: Netlify, GitHub Pages, Surge.sh
-- **Database**: Local MongoDB, DigitalOcean MongoDB, AWS DocumentDB
-
-<br/>
-
-## Project Structure
-
-<details>
-<summary><strong>View Full Directory Tree</strong></summary>
-
-<br/>
-
-```text
-Real-Estate-Website/
-├── frontend/          → User-facing website (React + TypeScript + Vite)
-├── admin/             → Admin dashboard (React + Vite)
-├── backend/           → REST API server (Node.js + Express)
-├── Image/             → README screenshots
-└── .github/           → Issue templates, PR template, CODEOWNERS
-```
-
-**Frontend src/**
-
-```text
-├── components/
-│   ├── ai-hub/            → AI Property Hub (search form, results, trends)
-│   ├── common/            → Navbar, Footer, SEO, PageTransition
-│   ├── home/              → Homepage sections
-│   ├── properties/        → Filter sidebar, property cards
-│   ├── property-details/  → Gallery, amenities, booking form
-│   ├── about/             → About page sections
-│   └── contact/           → Contact page sections
-├── contexts/              → AuthContext (JWT state management)
-├── hooks/                 → useSEO
-├── pages/                 → All pages (lazy loaded via React.lazy)
-└── services/              → api.ts (Axios client + API key injection)
-```
-
-**Backend**
-
-```text
-├── config/         → MongoDB, ImageKit, Nodemailer config
-├── controller/     → Route handlers (property, appointment, AI search)
-├── middleware/      → JWT auth, Multer uploads, stats tracking, request transform
-├── models/         → Mongoose schemas (Property, User, Appointment, Stats)
-├── routes/         → Express route definitions
-├── services/
-│   ├── firecrawlService.js  → Smart Zap Imóveis scraping (30+ cities, URL construction, retry logic)
-│   └── aiService.js         → GPT-4.1 property analysis + location trends
-├── utils/          → AI response validation & safe parsing
-└── server.js       → Entry point (Helmet, CORS, rate limiting)
-```
-
-**Admin src/**
-
-```text
-├── components/     → Login, Navbar, ProtectedRoute
-├── config/         → Property types, amenities constants
-├── contexts/       → AuthContext (admin JWT state)
-└── pages/          → Dashboard, Add, List, Update, Appointments
-```
-
-</details>
-
-<br/>
-
-### Available Scripts
-
-| Directory | Command | Description |
-|---|---|---|
-| backend/ | npm run dev | Start with nodemon (auto-reload) |
-| backend/ | npm start | Start production server |
-| frontend/ | npm run dev | Start Vite dev server |
-| frontend/ | npm run build | Production build |
-| admin/ | npm run dev | Start Vite dev server |
-| admin/ | npm run build | Production build |
-
-<br/>
-
-
-<br/>
-
-<br/>
-
-
-<div align="center">
-
-
-</div>
-
+| Layer | Technology |
+|---|---|
+| Smart contract | Solidity `0.8.19` |
+| Toolchain | Foundry (forge, cast) |
+| Network | Polygon Amoy |
+| Frontend | React 18 + TypeScript |
+| Web3 | ethers.js v6 |
+| Styling | Tailwind CSS |
