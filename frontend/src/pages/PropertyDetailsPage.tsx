@@ -14,6 +14,8 @@ import { propertiesAPI } from '../services/api';
 import { useSEO } from '../hooks/useSEO';
 import StructuredData from '../components/common/StructuredData';
 import { formatPrice } from '../utils/formatPrice';
+import { usePropertyRegistry } from '../hooks/usePropertyRegistry';
+import { parseEther } from 'ethers';
 
 interface PropertyData {
   _id: string;
@@ -37,6 +39,7 @@ const PropertyDetailsPage: React.FC = () => {
   const [property, setProperty] = useState<PropertyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { status, txHash, error: chainError, registerOnChain } = usePropertyRegistry();
 
   // Dynamic SEO based on loaded property
   useSEO({
@@ -202,6 +205,40 @@ const PropertyDetailsPage: React.FC = () => {
               <ScheduleViewingCard
                 property={{ name: property.title, id: property._id }}
               />
+                <div className="border rounded-lg p-4 mt-4">
+                  <h3 className="font-semibold mb-2">Blockchain Status</h3>
+
+                  {status === "idle" && (
+                  <>
+                    <p className="text-sm text-gray-500 mb-2">Not registered on blockchain</p>
+                    <button
+                      onClick={() => registerOnChain(property.location, parseEther(property.price.toString()))}
+                      className="bg-blue-600 text-white px-4 py-2 rounded"
+                    >
+                      Register on Blockchain
+                    </button>
+                  </>
+                )}
+
+                {status === "connecting" && <p className="text-sm">Connecting wallet...</p>}
+                {status === "pending" && <p className="text-sm">Transaction pending...</p>}
+
+                {status === "confirmed" && (
+                  <p className="text-sm text-green-600">
+                    Registered! Tx:{" "}
+      
+                      <a href={`https://amoy.polygonscan.com/tx/${txHash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    >
+                      {txHash?.slice(0, 10)}...
+                    </a>
+                  </p>
+                )}
+
+                {status === "error" && <p className="text-sm text-red-600">{error}</p>}
+              </div>
             </div>
           </div>
         </div>
