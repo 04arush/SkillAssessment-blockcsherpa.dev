@@ -11,8 +11,6 @@ I was given the [REChain](https://github.com/0xjoseOlivencia/Skill-Assessment) r
 
 Everything in `contracts/` is written by me from scratch. In `frontend/`, I added two new files and modified one existing page. The backend was not touched except for the `.env` where I added a dummy MongoDB URI to get the project running locally.
 
-The `.env` in `backend/` was already pushed to the repo so I did not remove it. The URI I added is just a dummy account of mine.
-
 ## Time Taken
 
 The assessment window was 3–4 hours. My first commit (repo clone) was at ~15:10 IST and my last commit (excluding README) at ~19:08 IST — but being true, I think I went a little over 4 hours. The extra time was spent getting the existing backend running locally, which required configuring MongoDB, something I hadn't worked with before. The contract, tests, deployment, and frontend integration were all done within the intended window. Commit history is in the repo for reference.
