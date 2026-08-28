@@ -114,8 +114,8 @@ forge test -vvv
 
 I wrote a Foundry deploy script at `contracts/script/Deploy.s.sol` and deployed to Polygon Amoy.
 
-**Contract address:** [`0xe3B492286030B7230d121A03a68F7cA80744E892`](https://amoy.polygonscan.com/address/0xe3B492286030B7230d121A03a68F7cA80744E892)  
-**Deploy tx:** [`0x2df6d62387746100e97b0b5ed6236857edc5d23ae1fa3f6c2d3626265aefe37b`](https://amoy.polygonscan.com/tx/0x2df6d62387746100e97b0b5ed6236857edc5d23ae1fa3f6c2d3626265aefe37b)  
+**Contract address:** [`0xa26069660F55946cFC912b2320379e0FeE724416`](https://amoy.polygonscan.com/address/0xa26069660F55946cFC912b2320379e0FeE724416)  
+**Deploy tx:** [`0x538fb75ca91963734af4cc34cfd642638c6fdff885dcd41716bb5593c9511d14`](https://amoy.polygonscan.com/tx/0x538fb75ca91963734af4cc34cfd642638c6fdff885dcd41716bb5593c9511d14)  
 **Network:** Polygon Amoy (chain ID `80002`)
 
 ```bash
